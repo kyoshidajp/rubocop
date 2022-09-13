@@ -70,6 +70,8 @@ module RuboCop
         def on_send(node)
           return unless (range = offense_range(node))
 
+          return if target_ruby_version < 3.1 && lazy?(node)
+
           good = good_method_name(node)
           message = format(MSG, good: good, bad: range.source)
 
@@ -77,6 +79,14 @@ module RuboCop
         end
 
         private
+
+        def lazy?(node)
+          return false if node.nil?
+
+          caller, _method, _args = *node
+          receiver, method, _args = *caller
+          method == :lazy && !receiver.nil?
+        end
 
         def offense_range(node)
           if reject_method_with_block_pass?(node)

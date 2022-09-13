@@ -85,4 +85,40 @@ RSpec.describe RuboCop::Cop::Style::CollectionCompact, :config do
       RUBY
     end
   end
+
+  context 'on lazy' do
+    let(:config) do
+      RuboCop::Config
+        .new(
+          'AllCops' => { 'TargetRubyVersion' => target_ruby_version }
+        )
+    end
+
+    context '= Ruby 2.7', :ruby27 do
+      let(:target_ruby_version) { 2.7 }
+      it 'does not register an offense when using `reject/reject!`' do
+        expect_no_offenses(<<~RUBY)
+          array.lazy.reject(&:nil?)
+          array.lazy.reject!(&:nil?)
+        RUBY
+      end
+    end
+
+    context '>= Ruby 3.1', :ruby31 do
+      let(:target_ruby_version) { 3.1 }
+      it 'registers an offense and corrects when using `reject` with block pass arg on array to reject nils' do
+        expect_offense(<<~RUBY)
+          array.lazy.reject(&:nil?)
+                     ^^^^^^^^^^^^^^ Use `compact` instead of `reject(&:nil?)`.
+          array.lazy.reject!(&:nil?)
+                     ^^^^^^^^^^^^^^^ Use `compact!` instead of `reject!(&:nil?)`.
+        RUBY
+
+        expect_correction(<<~RUBY)
+          array.lazy.compact
+          array.lazy.compact!
+        RUBY
+      end
+    end
+  end
 end
